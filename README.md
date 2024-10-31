@@ -18,9 +18,8 @@ employ some form of compression and quantization along the sequence axis, such a
 and/or are not autoregressive in the time domain at all. In these cases, at least, RNNs may provide a leg up over Transformers.
 
 ## Why haven't we done this sooner?
-Self-attention consists mainly of matrix-matrix products that are parallelizable along the sequence axis, during both forward and
-backward passes. On the other hand, RNNs with recurrent nonlinearities (i.e. those with $h_t$ nonlinear in $h_{t-1}$)
-must be unrolled sequentially.
+Self-attention consists mainly of matrix-matrix products that are highly parallelizable. On the other hand, RNNs with recurrent 
+nonlinearities (i.e. those with $h_t$ nonlinear in $h_{t-1}$) must be unrolled sequentially.
 
 In [arXiv:1709.04057, Martin and Cundy](https://arxiv.org/abs/1709.04057) showed that _linear_ recurrent neural networks can be
 unrolled in _parallel_, and provide a custom CUDA kernel for a parallel scan. [Subsequent work by Smith et al.](https://arxiv.org/abs/2208.04933)
@@ -37,7 +36,7 @@ task as well as compete with Transformers and [Mamba](https://arxiv.org/abs/2312
 ## What are the goals of this implementation?
 1. To provide an object lesson in the relatively new `nnx` API
 2. To explore the design space of linear recurrent neural networks and to get a sense of their capabilities firsthand
-3. To dip a toe into generative language modelling, an area that I don't often work in at my job
+3. To dip a toe into generative language modelling, an area in which I don't often work at my job
 
 ## How does this implementation work?
 Following the code provided by [Orvieto et al.](https://arxiv.org/pdf/2303.06349#page=17) and [the official implementation of RecurrentGemma](https://github.com/google-deepmind/recurrentgemma/blob/8a32e3657ad34a1ce35a4577558239c1c0b65644/recurrentgemma/jax/scan.py#L150-L204), 
@@ -54,7 +53,7 @@ def parallel_scan(a, b, v_0):
     _, v_t = jax.lax.associative_scan(binary_operator_diag, (a, b))
     return v_t[1:]
 ```
-This defines the parallel linear recurrence over the leading axes of `a` and `b`! It also enables us to supply `v_0`, the initial value of 
+This defines the parallel linear recurrence over the leading axes of `a` and `b`; it also enables us to supply `v_0`, the initial value of 
 the recurrence (usually set to zero). We then define two GRU modules, a parallel one, and a sequential one:
 ```python
 class GRUBase(nnx.Module):
