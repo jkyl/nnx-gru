@@ -211,3 +211,81 @@ def sample(
     token = jax.random.categorical(rng, logits / temperature)
     return token, state
 ```
+We train a 300M-parameter model on a few million tokens of English literature, to test its expressivity. We find that it 
+converges quickly on a single A100, within 10,000 steps:
+
+![loss curve](loss_curve.png)
+
+It is happy to regurgitate long sections of its training data when prompted:
+```python
+rng = nnx.Rngs(0)
+temperature = 0.5
+prompt = "ROMEO."
+prompt_tokens = tokenizer(prompt, return_tensors="jax").input_ids
+logits, state = prefill(parallel_model, prompt_tokens)
+sequential_model = to_sequential(parallel_model)
+token = jax.random.categorical(rng(), logits / temperature)
+streamer = TextStreamer(tokenizer, skip_special_tokens=True)
+streamer.put(prompt_tokens)
+streamer.put(token)
+for step in range(512):
+    token, state = sample(sequential_model, token, state, temperature=temperature, rng=rng())
+    streamer.put(token)
+streamer.end()
+```
+> ROMEO.
+> A torch for me: let wantons, light of heart,
+> Tickle the senseless rushes with their heels;
+> For I am proverb’d with a grandsire phrase,
+> I’ll be a candle-holder and look on,
+> The game was ne’er so fair, and I am done.
+> 
+> MERCUTIO.
+> Tut, dun’s the mouse, the constable’s own word:
+> If thou art dun, we’ll draw thee from the mire
+> Or save your reverence love, wherein thou stickest
+> Up to the ears. Come, we burn daylight, ho.
+> 
+> ROMEO.
+> Nay, that’s not so.
+> 
+> MERCUTIO.
+> I mean sir, in delay
+> We waste our lights in vain, light lights by day.
+> Take our good meaning, for our judgment sits
+> Five times in that ere once in our five wits.
+> 
+> ROMEO.
+> And we mean well in going to this mask;
+> But ’tis no wit to go.
+> 
+> MERCUTIO.
+> Why, may one ask?
+> 
+> ROMEO.
+> I dreamt a dream tonight.
+> 
+> MERCUTIO.
+> And so did I.
+> 
+> ROMEO.
+> Well what was yours?
+> 
+> MERCUTIO.
+> That dreamers often lie.
+> 
+> ROMEO.
+> In bed asleep, while they do dream things true.
+> 
+> MERCUTIO.
+> O, then, I see Queen Mab hath been with you.
+> She is the fairies’ midwife, and she comes
+> In shape no bigger than an agate-stone
+> On the fore-finger of an alderman,
+> Drawn with a team of little atomies
+> Over men’s noses as they lie asleep:
+> Her waggon-spokes made of long spinners’ legs;
+> The cover, of the wings of grasshoppers;
+> Her traces, of the smallest spider’s web;
+> The collars, of the moonshine’s watery beams;
+> Her whip of cricket�
