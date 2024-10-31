@@ -197,7 +197,7 @@ def prefill(model: ParallelModel, tokens: jax.Array) -> tuple[jax.Array, jax.Arr
     return final_logits, final_state
 ```
 Finally, we can define the autoregressive recurrence:
-```
+```python
 @nnx.jit
 def sample(
     model: SequentialModel,
